@@ -1,0 +1,85 @@
+{
+  "name": "load_songs_dag",
+  "description": "One-time load of songs reference data into the data warehouse. Migrated from Airflow load_songs_dag.",
+  "tags": {
+    "source": "airflow_migration",
+    "domain": "streamify"
+  },
+  "max_concurrent_runs": 1,
+  "parameters": [
+    {
+      "name": "catalog",
+      "default": "streamify"
+    },
+    {
+      "name": "schema",
+      "default": "streamify_stg"
+    },
+    {
+      "name": "volume_path",
+      "default": "/Volumes/streamify/streamify_stg/songs_raw"
+    },
+    {
+      "name": "warehouse_id",
+      "default": ""
+    }
+  ],
+  "job_clusters": [
+    {
+      "job_cluster_key": "songs_etl_cluster",
+      "new_cluster": {
+        "spark_version": "14.3.x-scala2.12",
+        "num_workers": 0,
+        "node_type_id": "i3.xlarge",
+        "spark_conf": {
+          "spark.master": "local[*]",
+          "spark.databricks.cluster.profile": "singleNode"
+        },
+        "custom_tags": {
+          "ResourceClass": "SingleNode"
+        },
+        "data_security_mode": "SINGLE_USER"
+      }
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "download_convert_upload_songs",
+      "description": "Downloads songs.csv from GitHub, converts to Parquet, and loads into a Unity Catalog Volume. Combines original Airflow tasks: download_songs_file, convert_to_parquet, upload_to_gcs, remove_files_from_local.",
+      "job_cluster_key": "songs_etl_cluster",
+      "notebook_task": {
+        "notebook_path": "/Workspace/Shared/streamify/load_songs",
+        "source": "WORKSPACE",
+        "base_parameters": {
+          "source_url": "https://github.com/ankurchavda/streamify/raw/main/dbt/seeds/songs.csv",
+          "catalog": "{{job.parameters.catalog}}",
+          "schema": "{{job.parameters.schema}}",
+          "volume_path": "{{job.parameters.volume_path}}"
+        }
+      },
+      "timeout_seconds": 3600
+    },
+    {
+      "task_key": "create_songs_table",
+      "description": "Creates the songs managed table in Unity Catalog from the uploaded Parquet data. Replaces original Airflow task: create_external_table (BigQuery external table).",
+      "depends_on": [
+        {
+          "task_key": "download_convert_upload_songs"
+        }
+      ],
+      "sql_task": {
+        "file": {
+          "path": "/Workspace/Shared/streamify/sql/create_songs_table.sql",
+          "source": "WORKSPACE"
+        },
+        "warehouse_id": "{{job.parameters.warehouse_id}}",
+        "parameters": {
+          "catalog": "{{job.parameters.catalog}}",
+          "schema": "{{job.parameters.schema}}",
+          "volume_path": "{{job.parameters.volume_path}}"
+        }
+      },
+      "timeout_seconds": 600
+    }
+  ]
+}

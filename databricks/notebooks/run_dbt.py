@@ -77,8 +77,8 @@ cmd_args = [dbt_subcommand, "--profiles-dir", ".", "--target", dbt_target]
 if dbt_select:
     cmd_args.extend(["--select", dbt_select])
 
-# deps and debug don't need --profiles-dir/--target
-if dbt_subcommand in ("deps", "debug"):
+# deps doesn't need --profiles-dir/--target
+if dbt_subcommand == "deps":
     cmd_args = [dbt_subcommand]
 
 run_dbt(cmd_args)

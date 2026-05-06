@@ -132,6 +132,7 @@ load_songs (one-time) → ingest_all_events (sequential per topic) → dbt_seed 
 | `GENERATE_TIMESTAMP_ARRAY(start, end, INTERVAL 1 HOUR)` + `UNNEST(...)` | `explode(sequence(start, end, INTERVAL 1 HOUR))` | `dim_datetime.sql` |
 | `date_trunc(ts, HOUR)` | `date_trunc('HOUR', ts)` | `fact_streams.sql` |
 | `UNIX_SECONDS(date)` | `UNIX_TIMESTAMP(date)` | `dim_datetime.sql` |
+| `EXTRACT(DAYOFWEEK FROM date) IN (6,7)` | `DAYOFWEEK(date) IN (1, 7)` | `dim_datetime.sql` — **Semantic fix:** the original BigQuery code flagged days 6 (Friday) and 7 (Saturday) as weekends, which was incorrect since BigQuery DAYOFWEEK returns 1=Sunday..7=Saturday. The Databricks version corrects this to 1 (Sunday) and 7 (Saturday). The `weekendFlag` column will differ during parallel-run validation. |
 | `EXTRACT(DAYOFWEEK FROM date)` | `DAYOFWEEK(date)` | `dim_datetime.sql` |
 | `EXTRACT(DAY FROM date)` | `DAY(date)` | `dim_datetime.sql` |
 | `EXTRACT(WEEK FROM date)` | `WEEKOFYEAR(date)` | `dim_datetime.sql` |

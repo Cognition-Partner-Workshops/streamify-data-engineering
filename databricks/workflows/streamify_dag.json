@@ -233,7 +233,9 @@
           "dbt seed --select state_codes --profiles-dir . --target prod"
         ],
         "project_directory": "{{job.parameters.dbt_project_path}}",
-        "warehouse_id": "{{job.parameters.warehouse_id}}"
+        "warehouse_id": "{{job.parameters.warehouse_id}}",
+        "catalog": "{{job.parameters.catalog}}",
+        "schema": "{{job.parameters.schema}}"
       }
     },
     {
@@ -251,7 +253,9 @@
           "dbt run --profiles-dir . --target prod"
         ],
         "project_directory": "{{job.parameters.dbt_project_path}}",
-        "warehouse_id": "{{job.parameters.warehouse_id}}"
+        "warehouse_id": "{{job.parameters.warehouse_id}}",
+        "catalog": "{{job.parameters.catalog}}",
+        "schema": "{{job.parameters.schema}}"
       }
     }
   ]

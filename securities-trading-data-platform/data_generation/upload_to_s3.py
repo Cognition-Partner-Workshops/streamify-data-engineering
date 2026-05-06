@@ -29,7 +29,13 @@ def _ensure_bucket(s3_client, bucket_name: str) -> None:
     try:
         s3_client.head_bucket(Bucket=bucket_name)
         console.print(f"  Bucket [cyan]{bucket_name}[/cyan] exists")
-    except s3_client.exceptions.ClientError:
+    except s3_client.exceptions.ClientError as e:
+        error_code = e.response["Error"]["Code"]
+        if error_code == "403":
+            msg = f"Access denied for bucket '{bucket_name}'. Check your AWS credentials/permissions."
+            raise SystemExit(msg) from e
+        if error_code != "404":
+            raise
         console.print(f"  Creating bucket [cyan]{bucket_name}[/cyan]...")
         if settings.aws_region == "us-east-1":
             s3_client.create_bucket(Bucket=bucket_name)

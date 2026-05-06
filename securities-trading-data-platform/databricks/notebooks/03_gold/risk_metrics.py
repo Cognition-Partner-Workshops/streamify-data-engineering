@@ -33,7 +33,7 @@ df_market = spark.table(f"{CATALOG}.{SILVER}.market_data")
 # COMMAND ----------
 
 # Get latest volatility per symbol
-w_latest = Window.partitionBy("symbol").orderBy(F.col("trade_date").desc())
+w_latest = Window.partitionBy("symbol").orderBy(F.col("timestamp").desc())
 
 df_vol = (
     df_market

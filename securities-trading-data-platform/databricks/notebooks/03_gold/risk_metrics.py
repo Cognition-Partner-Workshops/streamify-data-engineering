@@ -50,7 +50,7 @@ df_latest_pos = df_positions.filter(F.col("as_of_date") == latest_date)
 df_pos_risk = (
     df_latest_pos
     .join(df_vol, on="symbol", how="left")
-    .withColumn("daily_vol", F.coalesce(F.col("volatility_20") / 100, F.lit(0.02)))
+    .withColumn("daily_vol", F.coalesce(F.col("volatility_20") / 100 * F.sqrt(F.lit(78)), F.lit(0.02)))
     # Individual position VaR (95% = 1.645 * sigma * value)
     .withColumn("position_var_95", F.round(1.645 * F.col("daily_vol") * F.abs(F.col("market_value")), 2))
 )

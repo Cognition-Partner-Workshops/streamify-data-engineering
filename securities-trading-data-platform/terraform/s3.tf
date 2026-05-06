@@ -152,37 +152,41 @@ resource "aws_iam_policy" "databricks_s3_access" {
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "ListBucket"
-        Effect = "Allow"
-        Action = [
-          "s3:ListBucket",
-          "s3:GetBucketLocation",
-        ]
-        Resource = aws_s3_bucket.data_lake.arn
-      },
-      {
-        Sid    = "ReadWriteObjects"
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:PutObject",
-          "s3:DeleteObject",
-          "s3:GetObjectVersion",
-        ]
-        Resource = "${aws_s3_bucket.data_lake.arn}/*"
-      },
-      {
-        Sid    = "KMSAccess"
-        Effect = "Allow"
-        Action = [
-          "kms:Decrypt",
-          "kms:Encrypt",
-          "kms:GenerateDataKey",
-        ]
-        Resource = var.enable_kms_encryption ? aws_kms_key.data_platform[0].arn : "*"
-      }
-    ]
+    Statement = concat(
+      [
+        {
+          Sid    = "ListBucket"
+          Effect = "Allow"
+          Action = [
+            "s3:ListBucket",
+            "s3:GetBucketLocation",
+          ]
+          Resource = aws_s3_bucket.data_lake.arn
+        },
+        {
+          Sid    = "ReadWriteObjects"
+          Effect = "Allow"
+          Action = [
+            "s3:GetObject",
+            "s3:PutObject",
+            "s3:DeleteObject",
+            "s3:GetObjectVersion",
+          ]
+          Resource = "${aws_s3_bucket.data_lake.arn}/*"
+        },
+      ],
+      var.enable_kms_encryption ? [
+        {
+          Sid    = "KMSAccess"
+          Effect = "Allow"
+          Action = [
+            "kms:Decrypt",
+            "kms:Encrypt",
+            "kms:GenerateDataKey",
+          ]
+          Resource = aws_kms_key.data_platform[0].arn
+        }
+      ] : []
+    )
   })
 }

@@ -27,8 +27,8 @@
       "timeout_seconds": 600
     },
     {
-      "task_key": "ingest_listen_events",
-      "description": "Auto Loader: incrementally ingest listen_events Parquet files from cloud storage into bronze.listen_events Delta table. Replaces create_external_table + insert_job + delete_external_table for listen_events.",
+      "task_key": "ingest_all_events",
+      "description": "Auto Loader: incrementally ingest all event types (listen_events, page_view_events, auth_events) from cloud storage into bronze Delta tables. The notebook processes all three topics sequentially with separate checkpoints. Replaces the per-event create_external_table + insert_job + delete_external_table Airflow task chains.",
       "depends_on": [
         { "task_key": "load_songs" }
       ],
@@ -43,53 +43,13 @@
         "source": "GIT"
       },
       "job_cluster_key": "shared_cluster",
-      "timeout_seconds": 1800
-    },
-    {
-      "task_key": "ingest_page_view_events",
-      "description": "Auto Loader: incrementally ingest page_view_events into bronze.page_view_events Delta table. Replaces the page_view_events Airflow task chain.",
-      "depends_on": [
-        { "task_key": "load_songs" }
-      ],
-      "notebook_task": {
-        "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/ingest_events_autoloader",
-        "base_parameters": {
-          "source_base_path": "{{source_storage_path}}",
-          "catalog": "streamify_catalog",
-          "bronze_schema": "bronze",
-          "checkpoint_base": "/Volumes/streamify_catalog/bronze/_checkpoints/autoloader"
-        },
-        "source": "GIT"
-      },
-      "job_cluster_key": "shared_cluster",
-      "timeout_seconds": 1800
-    },
-    {
-      "task_key": "ingest_auth_events",
-      "description": "Auto Loader: incrementally ingest auth_events into bronze.auth_events Delta table. Replaces the auth_events Airflow task chain.",
-      "depends_on": [
-        { "task_key": "load_songs" }
-      ],
-      "notebook_task": {
-        "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/ingest_events_autoloader",
-        "base_parameters": {
-          "source_base_path": "{{source_storage_path}}",
-          "catalog": "streamify_catalog",
-          "bronze_schema": "bronze",
-          "checkpoint_base": "/Volumes/streamify_catalog/bronze/_checkpoints/autoloader"
-        },
-        "source": "GIT"
-      },
-      "job_cluster_key": "shared_cluster",
-      "timeout_seconds": 1800
+      "timeout_seconds": 3600
     },
     {
       "task_key": "dbt_seed",
       "description": "Run dbt seed to load state_codes into the staging schema. Replaces the 'dbt_initiate' Airflow BashOperator task.",
       "depends_on": [
-        { "task_key": "ingest_listen_events" },
-        { "task_key": "ingest_page_view_events" },
-        { "task_key": "ingest_auth_events" }
+        { "task_key": "ingest_all_events" }
       ],
       "notebook_task": {
         "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/run_dbt",

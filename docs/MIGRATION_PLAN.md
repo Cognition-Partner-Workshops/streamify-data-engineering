@@ -86,14 +86,14 @@ create_external_table → create_empty_table → insert_job → delete_external_
 The Databricks Workflow (`streamify_hourly_pipeline`) simplifies this to:
 
 ```
-load_songs (one-time) → [ingest_listen_events, ingest_page_view_events, ingest_auth_events] (parallel) → dbt_seed → dbt_run
+load_songs (one-time) → ingest_all_events (sequential per topic) → dbt_seed → dbt_run
 ```
 
 | Airflow Task | Databricks Task | Notes |
 |---|---|---|
 | `create_external_table` | Eliminated | Auto Loader handles incremental file discovery natively |
 | `create_empty_table` | Eliminated | Delta tables are created automatically on first write |
-| `insert_job` | `ingest_*_events` | Auto Loader replaces the INSERT SELECT from external table pattern |
+| `insert_job` | `ingest_all_events` | Auto Loader replaces the INSERT SELECT from external table pattern; single task processes all topics sequentially to avoid checkpoint conflicts |
 | `delete_external_table` | Eliminated | No temporary external tables to clean up |
 | `dbt_initiate` | `dbt_seed` | Runs `dbt seed --select state_codes` |
 | `dbt_streamify_run` | `dbt_run` | Runs `dbt run` |
@@ -274,8 +274,8 @@ OPTIMIZE streamify_catalog.bronze.listen_events
 | Cron | `0 5 * * * ?` | Matches original Airflow `5 * * * *` |
 | Max concurrent runs | 1 | Prevents overlapping runs (same as Airflow `max_active_runs=1`) |
 | Cluster | Photon-enabled, 2 workers | Sufficient for the data volumes |
-| Task parallelism | 3 ingestion tasks run in parallel | The 3 event types are independent |
-| Timeout | 1800s per ingestion task, 600s for dbt tasks | Generous limits for production reliability |
+| Ingestion | Single task processes all 3 topics sequentially | Avoids checkpoint conflicts from parallel runs of the same notebook |
+| Timeout | 3600s for ingestion task, 600s for dbt tasks | Generous limits for production reliability |
 
 ### Continuous streaming (`streamify_continuous_streaming`)
 

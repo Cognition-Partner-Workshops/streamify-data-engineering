@@ -135,7 +135,7 @@ load_songs (one-time) → ingest_all_events (sequential per topic) → dbt_seed 
 | `EXTRACT(DAYOFWEEK FROM date) IN (6,7)` | `DAYOFWEEK(date) IN (1, 7)` | `dim_datetime.sql` — **Semantic fix:** the original BigQuery code flagged days 6 (Friday) and 7 (Saturday) as weekends, which was incorrect since BigQuery DAYOFWEEK returns 1=Sunday..7=Saturday. The Databricks version corrects this to 1 (Sunday) and 7 (Saturday). The `weekendFlag` column will differ during parallel-run validation. |
 | `EXTRACT(DAYOFWEEK FROM date)` | `DAYOFWEEK(date)` | `dim_datetime.sql` |
 | `EXTRACT(DAY FROM date)` | `DAY(date)` | `dim_datetime.sql` |
-| `EXTRACT(WEEK FROM date)` | `WEEKOFYEAR(date)` | `dim_datetime.sql` |
+| `EXTRACT(WEEK FROM date)` | `WEEKOFYEAR(date)` | `dim_datetime.sql` — **Semantic change:** BigQuery returns 0–53 with Sunday-based weeks; `WEEKOFYEAR` returns ISO 8601 weeks 1–53 with Monday-based weeks. Values may differ at year boundaries (e.g. 2023-01-01). |
 | `EXTRACT(MONTH FROM date)` | `MONTH(date)` | `dim_datetime.sql` |
 | `EXTRACT(YEAR FROM date)` | `YEAR(date)` | `dim_datetime.sql` |
 | `DATE '9999-12-31'` | `CAST('9999-12-31' AS DATE)` | `dim_users.sql` |

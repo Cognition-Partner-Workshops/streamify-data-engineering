@@ -69,7 +69,7 @@ def run_dbt(args):
 
 
 # Run dbt deps first if requested
-if run_deps_first:
+if run_deps_first and dbt_subcommand != "deps":
     run_dbt(["deps"])
 
 # Build the main command

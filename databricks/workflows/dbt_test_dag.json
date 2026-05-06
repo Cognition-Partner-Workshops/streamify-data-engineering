@@ -1,0 +1,38 @@
+{
+  "name": "dbt_test",
+  "max_concurrent_runs": 1,
+  "tags": {
+    "source": "airflow_migration",
+    "domain": "streamify"
+  },
+  "parameters": [
+    {
+      "name": "warehouse_id",
+      "default": ""
+    },
+    {
+      "name": "catalog",
+      "default": ""
+    },
+    {
+      "name": "schema",
+      "default": ""
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "dbt_test",
+      "description": "Test dbt setup by running dependency installation and compilation",
+      "dbt_task": {
+        "commands": [
+          "dbt deps",
+          "dbt compile"
+        ],
+        "project_directory": "/Workspace/path/to/dbt/project",
+        "warehouse_id": "{{job.parameters.warehouse_id}}",
+        "catalog": "{{job.parameters.catalog}}",
+        "schema": "{{job.parameters.schema}}"
+      }
+    }
+  ]
+}

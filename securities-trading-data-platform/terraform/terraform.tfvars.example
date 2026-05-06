@@ -1,0 +1,13 @@
+# Copy this file to terraform.tfvars and fill in values
+
+aws_region         = "us-east-1"
+environment        = "dev"
+project_name       = "securities-trading-data-platform"
+databricks_host    = "https://your-workspace.cloud.databricks.com"
+databricks_token   = "dapi..."
+unity_catalog_name = "trading_platform"
+
+# Storage lifecycle
+enable_versioning      = true
+lifecycle_glacier_days = 365
+enable_kms_encryption  = true

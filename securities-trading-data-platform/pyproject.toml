@@ -1,0 +1,44 @@
+[project]
+name = "securities-trading-data-platform"
+version = "1.0.0"
+description = "End-to-end modern data platform for financial securities trading data using S3 and Databricks with medallion architecture"
+requires-python = ">=3.10"
+dependencies = [
+    "boto3>=1.34.0",
+    "pandas>=2.1.0",
+    "pyarrow>=14.0.0",
+    "faker>=22.0.0",
+    "numpy>=1.26.0",
+    "pydantic>=2.5.0",
+    "pydantic-settings>=2.1.0",
+    "click>=8.1.0",
+    "rich>=13.7.0",
+    "python-dotenv>=1.0.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff>=0.2.0",
+    "mypy>=1.8.0",
+    "pytest>=7.4.0",
+]
+databricks = [
+    "databricks-sdk>=0.17.0",
+    "delta-spark>=3.1.0",
+    "pyspark>=3.5.0",
+]
+
+[project.scripts]
+generate-data = "data_generation.generate_all:main"
+upload-to-s3 = "data_generation.upload_to_s3:main"
+
+[tool.ruff]
+target-version = "py310"
+line-length = 120
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP"]
+
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"

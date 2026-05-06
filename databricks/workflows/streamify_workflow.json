@@ -54,7 +54,10 @@
       "notebook_task": {
         "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/run_dbt",
         "base_parameters": {
-          "dbt_command": "dbt deps && dbt seed --select state_codes --profiles-dir . --target prod"
+          "dbt_subcommand": "seed",
+          "dbt_target": "prod",
+          "dbt_select": "state_codes",
+          "run_deps_first": "true"
         },
         "source": "GIT"
       },
@@ -70,7 +73,9 @@
       "notebook_task": {
         "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/run_dbt",
         "base_parameters": {
-          "dbt_command": "dbt deps && dbt run --profiles-dir . --target prod"
+          "dbt_subcommand": "run",
+          "dbt_target": "prod",
+          "run_deps_first": "true"
         },
         "source": "GIT"
       },

@@ -10,16 +10,6 @@
     "timezone_id": "UTC"
   },
   "max_concurrent_runs": 1,
-  "job_clusters": [
-    {
-      "job_cluster_key": "streamify_cluster",
-      "new_cluster": {
-        "spark_version": "14.3.x-scala2.12",
-        "node_type_id": "i3.xlarge",
-        "num_workers": 1
-      }
-    }
-  ],
   "parameters": [
     {
       "name": "catalog",
@@ -62,7 +52,6 @@
     {
       "task_key": "listen_events_create_external_table",
       "description": "Create external table from parquet files in Unity Catalog volume for listen_events",
-      "job_cluster_key": "streamify_cluster",
       "sql_task": {
         "query": "CREATE TABLE `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`listen_events_{{job.parameters.execution_datetime_str}}` USING PARQUET LOCATION '{{job.parameters.volume_path}}/listen_events/month={{job.parameters.execution_month}}/day={{job.parameters.execution_day}}/hour={{job.parameters.execution_hour}}'",
         "warehouse_id": "{{job.parameters.warehouse_id}}"
@@ -71,7 +60,6 @@
     {
       "task_key": "listen_events_create_empty_table",
       "description": "Create staging table for listen_events if not exists, with hourly partitioning on ts",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "listen_events_create_external_table"
@@ -85,7 +73,6 @@
     {
       "task_key": "listen_events_execute_insert_query",
       "description": "Insert data from external table into staging table with COALESCE transformations for listen_events",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "listen_events_create_empty_table"
@@ -99,7 +86,6 @@
     {
       "task_key": "listen_events_delete_external_table",
       "description": "Drop the temporary external table for listen_events",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "listen_events_execute_insert_query"
@@ -113,7 +99,6 @@
     {
       "task_key": "page_view_events_create_external_table",
       "description": "Create external table from parquet files in Unity Catalog volume for page_view_events",
-      "job_cluster_key": "streamify_cluster",
       "sql_task": {
         "query": "CREATE TABLE `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`page_view_events_{{job.parameters.execution_datetime_str}}` USING PARQUET LOCATION '{{job.parameters.volume_path}}/page_view_events/month={{job.parameters.execution_month}}/day={{job.parameters.execution_day}}/hour={{job.parameters.execution_hour}}'",
         "warehouse_id": "{{job.parameters.warehouse_id}}"
@@ -122,7 +107,6 @@
     {
       "task_key": "page_view_events_create_empty_table",
       "description": "Create staging table for page_view_events if not exists, with hourly partitioning on ts",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "page_view_events_create_external_table"
@@ -136,7 +120,6 @@
     {
       "task_key": "page_view_events_execute_insert_query",
       "description": "Insert data from external table into staging table with COALESCE transformations for page_view_events",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "page_view_events_create_empty_table"
@@ -150,7 +133,6 @@
     {
       "task_key": "page_view_events_delete_external_table",
       "description": "Drop the temporary external table for page_view_events",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "page_view_events_execute_insert_query"
@@ -164,7 +146,6 @@
     {
       "task_key": "auth_events_create_external_table",
       "description": "Create external table from parquet files in Unity Catalog volume for auth_events",
-      "job_cluster_key": "streamify_cluster",
       "sql_task": {
         "query": "CREATE TABLE `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`auth_events_{{job.parameters.execution_datetime_str}}` USING PARQUET LOCATION '{{job.parameters.volume_path}}/auth_events/month={{job.parameters.execution_month}}/day={{job.parameters.execution_day}}/hour={{job.parameters.execution_hour}}'",
         "warehouse_id": "{{job.parameters.warehouse_id}}"
@@ -173,7 +154,6 @@
     {
       "task_key": "auth_events_create_empty_table",
       "description": "Create staging table for auth_events if not exists, with hourly partitioning on ts",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "auth_events_create_external_table"
@@ -187,7 +167,6 @@
     {
       "task_key": "auth_events_execute_insert_query",
       "description": "Insert data from external table into staging table with COALESCE transformations for auth_events",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "auth_events_create_empty_table"
@@ -201,7 +180,6 @@
     {
       "task_key": "auth_events_delete_external_table",
       "description": "Drop the temporary external table for auth_events",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "auth_events_execute_insert_query"
@@ -215,7 +193,6 @@
     {
       "task_key": "dbt_initiate",
       "description": "Install dbt dependencies and seed state_codes reference data",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "listen_events_delete_external_table"
@@ -241,7 +218,6 @@
     {
       "task_key": "dbt_streamify_run",
       "description": "Run dbt models to generate dims and facts for streamify",
-      "job_cluster_key": "streamify_cluster",
       "depends_on": [
         {
           "task_key": "dbt_initiate"

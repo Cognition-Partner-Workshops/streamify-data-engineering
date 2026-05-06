@@ -28,7 +28,7 @@
           "dbt deps",
           "dbt compile"
         ],
-        "project_directory": "/Workspace/path/to/dbt/project",
+        "project_directory": "/Workspace/streamify/dbt",
         "warehouse_id": "{{job.parameters.warehouse_id}}",
         "catalog": "{{job.parameters.catalog}}",
         "schema": "{{job.parameters.schema}}"

@@ -1,0 +1,108 @@
+{
+  "name": "streamify_hourly_pipeline",
+  "description": "Hourly data pipeline that ingests streaming events into Delta Lake bronze tables, then runs dbt to build the star-schema silver/gold layers. Replaces the Airflow streamify_dag.",
+  "tags": {
+    "project": "streamify",
+    "migrated_from": "airflow"
+  },
+  "schedule": {
+    "quartz_cron_expression": "0 5 * * * ?",
+    "timezone_id": "UTC",
+    "pause_status": "PAUSED"
+  },
+  "max_concurrent_runs": 1,
+  "tasks": [
+    {
+      "task_key": "load_songs",
+      "description": "One-time load of songs reference data into bronze.songs Delta table. Replaces load_songs_dag.py. Idempotent (overwrites).",
+      "notebook_task": {
+        "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/load_songs",
+        "base_parameters": {
+          "catalog": "streamify_catalog",
+          "bronze_schema": "bronze"
+        },
+        "source": "GIT"
+      },
+      "job_cluster_key": "shared_cluster",
+      "timeout_seconds": 600
+    },
+    {
+      "task_key": "ingest_all_events",
+      "description": "Auto Loader: incrementally ingest all event types (listen_events, page_view_events, auth_events) from cloud storage into bronze Delta tables. The notebook processes all three topics sequentially with separate checkpoints. Replaces the per-event create_external_table + insert_job + delete_external_table Airflow task chains.",
+      "depends_on": [
+        { "task_key": "load_songs" }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/ingest_events_autoloader",
+        "base_parameters": {
+          "source_base_path": "{{source_storage_path}}",
+          "catalog": "streamify_catalog",
+          "bronze_schema": "bronze",
+          "checkpoint_base": "/Volumes/streamify_catalog/bronze/_checkpoints/autoloader"
+        },
+        "source": "GIT"
+      },
+      "job_cluster_key": "shared_cluster",
+      "timeout_seconds": 3600
+    },
+    {
+      "task_key": "dbt_seed",
+      "description": "Run dbt seed to load state_codes into the staging schema. Replaces the 'dbt_initiate' Airflow BashOperator task.",
+      "depends_on": [
+        { "task_key": "ingest_all_events" }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/run_dbt",
+        "base_parameters": {
+          "dbt_subcommand": "seed",
+          "dbt_target": "prod",
+          "dbt_select": "state_codes",
+          "run_deps_first": "true"
+        },
+        "source": "GIT"
+      },
+      "job_cluster_key": "shared_cluster",
+      "timeout_seconds": 600
+    },
+    {
+      "task_key": "dbt_run",
+      "description": "Run dbt to build the star schema (dim_users, dim_songs, dim_artists, dim_location, dim_datetime, fact_streams, wide_streams). Replaces 'dbt_streamify_run' Airflow task.",
+      "depends_on": [
+        { "task_key": "dbt_seed" }
+      ],
+      "notebook_task": {
+        "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/run_dbt",
+        "base_parameters": {
+          "dbt_subcommand": "run",
+          "dbt_target": "prod",
+          "run_deps_first": "true"
+        },
+        "source": "GIT"
+      },
+      "job_cluster_key": "shared_cluster",
+      "timeout_seconds": 1800
+    }
+  ],
+  "job_clusters": [
+    {
+      "job_cluster_key": "shared_cluster",
+      "new_cluster": {
+        "spark_version": "14.3.x-scala2.12",
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 2,
+        "spark_conf": {
+          "spark.databricks.delta.preview.enabled": "true",
+          "spark.databricks.sql.initial.catalog.name": "streamify_catalog"
+        },
+        "data_security_mode": "SINGLE_USER",
+        "runtime_engine": "PHOTON"
+      }
+    }
+  ],
+  "email_notifications": {
+    "on_failure": [],
+    "on_success": [],
+    "no_alert_for_skipped_runs": true
+  },
+  "format": "MULTI_TASK"
+}

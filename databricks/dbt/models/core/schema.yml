@@ -1,0 +1,15 @@
+version: 2
+
+sources:
+    - name: staging
+      # Unity Catalog: catalog.schema
+      # The catalog is set in profiles.yml; the schema below points to the
+      # bronze layer where raw Delta tables live.
+      database: streamify_catalog
+      schema: bronze
+      tables:
+        - name: listen_events
+        - name: page_view_events
+        - name: auth_events
+        - name: songs
+        - name: state_codes

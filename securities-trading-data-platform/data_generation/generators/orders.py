@@ -77,11 +77,11 @@ class OrderGenerator:
                 price = limit_price
             elif order_type == OrderType.STOP:
                 offset = base_price * self.rng.uniform(0.02, 0.05)
-                stop_price = round(base_price - (offset if side == OrderSide.BUY else -offset), 2)
+                stop_price = round(base_price + (offset if side == OrderSide.BUY else -offset), 2)
                 price = stop_price
             elif order_type == OrderType.STOP_LIMIT:
                 offset = base_price * self.rng.uniform(0.02, 0.05)
-                stop_price = round(base_price - (offset if side == OrderSide.BUY else -offset), 2)
+                stop_price = round(base_price + (offset if side == OrderSide.BUY else -offset), 2)
                 limit_price = round(stop_price * (1 + self.rng.uniform(-0.005, 0.005)), 2)
                 price = limit_price
 

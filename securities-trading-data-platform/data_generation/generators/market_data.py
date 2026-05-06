@@ -52,7 +52,7 @@ class MarketDataGenerator:
         active_instruments = self.instruments[self.instruments["is_active"]].copy()
         equity_etf = active_instruments[active_instruments["asset_class"].isin(["EQUITY", "ETF"])]
 
-        records_per_instrument = max(1, self.num_records // len(equity_etf))
+        records_per_instrument = max(1, self.num_records // max(1, len(equity_etf)))
         total_bars = len(trading_days) * len(bar_times)
         sample_rate = min(1.0, records_per_instrument / total_bars)
 

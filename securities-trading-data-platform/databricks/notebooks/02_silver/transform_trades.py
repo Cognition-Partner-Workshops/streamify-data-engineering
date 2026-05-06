@@ -66,8 +66,11 @@ df_silver = (
         .when(F.col("execution_hour") < 14, "MIDDAY")
         .otherwise("AFTERNOON"),
     )
-    # Derived: effective total cost
-    .withColumn("total_cost", F.col("notional_value") + F.col("commission") + F.col("fees"))
+    # Derived: effective total cost (BUY = notional + costs, SELL = costs only)
+    .withColumn("total_cost",
+        F.when(F.col("side") == "BUY", F.col("notional_value") + F.col("commission") + F.col("fees"))
+        .otherwise(F.col("commission") + F.col("fees"))
+    )
     # Derived: cost basis per share
     .withColumn("cost_per_share", F.round(F.col("total_cost") / F.col("quantity"), 6))
     # Derived: is_settled flag

@@ -16,7 +16,6 @@ GOLD = "gold"
 # COMMAND ----------
 
 df_trades = spark.table(f"{CATALOG}.{SILVER}.trades").filter(F.col("status").isin("EXECUTED", "SETTLED"))
-df_market = spark.table(f"{CATALOG}.{SILVER}.market_data")
 
 # COMMAND ----------
 

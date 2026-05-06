@@ -1,0 +1,258 @@
+{
+  "name": "streamify_dag",
+  "description": "Hourly data pipeline to generate dims and facts for streamify",
+  "tags": {
+    "source": "airflow_migration",
+    "domain": "streamify"
+  },
+  "schedule": {
+    "quartz_cron_expression": "0 5 * * * ?",
+    "timezone_id": "UTC"
+  },
+  "max_concurrent_runs": 1,
+  "job_clusters": [
+    {
+      "job_cluster_key": "streamify_cluster",
+      "new_cluster": {
+        "spark_version": "14.3.x-scala2.12",
+        "node_type_id": "i3.xlarge",
+        "num_workers": 1
+      }
+    }
+  ],
+  "parameters": [
+    {
+      "name": "catalog",
+      "default": "streamify"
+    },
+    {
+      "name": "schema",
+      "default": "streamify_stg"
+    },
+    {
+      "name": "volume_path",
+      "default": "/Volumes/streamify/streamify_stg/raw_data"
+    },
+    {
+      "name": "execution_datetime_str",
+      "default": ""
+    },
+    {
+      "name": "execution_month",
+      "default": ""
+    },
+    {
+      "name": "execution_day",
+      "default": ""
+    },
+    {
+      "name": "execution_hour",
+      "default": ""
+    },
+    {
+      "name": "warehouse_id",
+      "default": ""
+    },
+    {
+      "name": "dbt_project_path",
+      "default": "/Workspace/streamify/dbt"
+    }
+  ],
+  "tasks": [
+    {
+      "task_key": "listen_events_create_external_table",
+      "description": "Create external table from parquet files in Unity Catalog volume for listen_events",
+      "job_cluster_key": "streamify_cluster",
+      "sql_task": {
+        "query": "CREATE TABLE `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`listen_events_{{job.parameters.execution_datetime_str}}` USING PARQUET LOCATION '{{job.parameters.volume_path}}/listen_events/month={{job.parameters.execution_month}}/day={{job.parameters.execution_day}}/hour={{job.parameters.execution_hour}}'",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "listen_events_create_empty_table",
+      "description": "Create staging table for listen_events if not exists, with hourly partitioning on ts",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "listen_events_create_external_table"
+        }
+      ],
+      "sql_task": {
+        "query": "CREATE TABLE IF NOT EXISTS `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`listen_events` (artist STRING, song STRING, duration DOUBLE, ts TIMESTAMP, auth STRING, level STRING, city STRING, state STRING, userAgent STRING, lon DOUBLE, lat DOUBLE, userId BIGINT, lastName STRING, firstName STRING, gender STRING, registration BIGINT) USING DELTA COMMENT 'Staging table for listen events - partitioned by HOUR on ts (migrated from BigQuery)'",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "listen_events_execute_insert_query",
+      "description": "Insert data from external table into staging table with COALESCE transformations for listen_events",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "listen_events_create_empty_table"
+        }
+      ],
+      "sql_task": {
+        "query": "INSERT INTO `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`listen_events` SELECT COALESCE(artist, 'NA') AS artist, COALESCE(song, 'NA') AS song, COALESCE(duration, -1) AS duration, ts, COALESCE(auth, 'NA') AS auth, COALESCE(level, 'NA') AS level, COALESCE(city, 'NA') AS city, COALESCE(state, 'NA') AS state, COALESCE(userAgent, 'NA') AS userAgent, COALESCE(lon, 0.0) AS lon, COALESCE(lat, 0.0) AS lat, COALESCE(userId, 0) AS userId, COALESCE(lastName, 'NA') AS lastName, COALESCE(firstName, 'NA') AS firstName, COALESCE(gender, 'NA') AS gender, COALESCE(registration, 9999999999999) AS registration FROM `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`listen_events_{{job.parameters.execution_datetime_str}}`",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "listen_events_delete_external_table",
+      "description": "Drop the temporary external table for listen_events",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "listen_events_execute_insert_query"
+        }
+      ],
+      "sql_task": {
+        "query": "DROP TABLE IF EXISTS `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`listen_events_{{job.parameters.execution_datetime_str}}`",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "page_view_events_create_external_table",
+      "description": "Create external table from parquet files in Unity Catalog volume for page_view_events",
+      "job_cluster_key": "streamify_cluster",
+      "sql_task": {
+        "query": "CREATE TABLE `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`page_view_events_{{job.parameters.execution_datetime_str}}` USING PARQUET LOCATION '{{job.parameters.volume_path}}/page_view_events/month={{job.parameters.execution_month}}/day={{job.parameters.execution_day}}/hour={{job.parameters.execution_hour}}'",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "page_view_events_create_empty_table",
+      "description": "Create staging table for page_view_events if not exists, with hourly partitioning on ts",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "page_view_events_create_external_table"
+        }
+      ],
+      "sql_task": {
+        "query": "CREATE TABLE IF NOT EXISTS `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`page_view_events` (ts TIMESTAMP, page STRING, auth STRING, method STRING, status BIGINT, level STRING, city STRING, state STRING, userAgent STRING, lon DOUBLE, lat DOUBLE, userId BIGINT, lastName STRING, firstName STRING, gender STRING, registration BIGINT, artist STRING, song STRING, duration DOUBLE) USING DELTA COMMENT 'Staging table for page view events - partitioned by HOUR on ts (migrated from BigQuery)'",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "page_view_events_execute_insert_query",
+      "description": "Insert data from external table into staging table with COALESCE transformations for page_view_events",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "page_view_events_create_empty_table"
+        }
+      ],
+      "sql_task": {
+        "query": "INSERT INTO `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`page_view_events` SELECT ts, COALESCE(page, 'NA') AS page, COALESCE(auth, 'NA') AS auth, COALESCE(method, 'NA') AS method, COALESCE(status, 0) AS status, COALESCE(level, 'NA') AS level, COALESCE(city, 'NA') AS city, COALESCE(state, 'NA') AS state, COALESCE(userAgent, 'NA') AS userAgent, COALESCE(lon, 0.0) AS lon, COALESCE(lat, 0.0) AS lat, COALESCE(userId, 0) AS userId, COALESCE(lastName, 'NA') AS lastName, COALESCE(firstName, 'NA') AS firstName, COALESCE(gender, 'NA') AS gender, COALESCE(registration, 9999999999999) AS registration, COALESCE(artist, 'NA') AS artist, COALESCE(song, 'NA') AS song, COALESCE(duration, -1) AS duration FROM `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`page_view_events_{{job.parameters.execution_datetime_str}}`",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "page_view_events_delete_external_table",
+      "description": "Drop the temporary external table for page_view_events",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "page_view_events_execute_insert_query"
+        }
+      ],
+      "sql_task": {
+        "query": "DROP TABLE IF EXISTS `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`page_view_events_{{job.parameters.execution_datetime_str}}`",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "auth_events_create_external_table",
+      "description": "Create external table from parquet files in Unity Catalog volume for auth_events",
+      "job_cluster_key": "streamify_cluster",
+      "sql_task": {
+        "query": "CREATE TABLE `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`auth_events_{{job.parameters.execution_datetime_str}}` USING PARQUET LOCATION '{{job.parameters.volume_path}}/auth_events/month={{job.parameters.execution_month}}/day={{job.parameters.execution_day}}/hour={{job.parameters.execution_hour}}'",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "auth_events_create_empty_table",
+      "description": "Create staging table for auth_events if not exists, with hourly partitioning on ts",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "auth_events_create_external_table"
+        }
+      ],
+      "sql_task": {
+        "query": "CREATE TABLE IF NOT EXISTS `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`auth_events` (ts TIMESTAMP, level STRING, city STRING, state STRING, userAgent STRING, lon DOUBLE, lat DOUBLE, userId BIGINT, lastName STRING, firstName STRING, gender STRING, registration BIGINT, success BOOLEAN) USING DELTA COMMENT 'Staging table for auth events - partitioned by HOUR on ts (migrated from BigQuery)'",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "auth_events_execute_insert_query",
+      "description": "Insert data from external table into staging table with COALESCE transformations for auth_events",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "auth_events_create_empty_table"
+        }
+      ],
+      "sql_task": {
+        "query": "INSERT INTO `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`auth_events` SELECT ts, COALESCE(level, 'NA') AS level, COALESCE(city, 'NA') AS city, COALESCE(state, 'NA') AS state, COALESCE(userAgent, 'NA') AS userAgent, COALESCE(CAST(lon AS DOUBLE), 0.0) AS lon, COALESCE(CAST(lat AS DOUBLE), 0.0) AS lat, COALESCE(userId, 0) AS userId, COALESCE(lastName, 'NA') AS lastName, COALESCE(firstName, 'NA') AS firstName, COALESCE(gender, 'NA') AS gender, COALESCE(registration, 9999999999999) AS registration, COALESCE(success, FALSE) AS success FROM `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`auth_events_{{job.parameters.execution_datetime_str}}`",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "auth_events_delete_external_table",
+      "description": "Drop the temporary external table for auth_events",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "auth_events_execute_insert_query"
+        }
+      ],
+      "sql_task": {
+        "query": "DROP TABLE IF EXISTS `{{job.parameters.catalog}}`.`{{job.parameters.schema}}`.`auth_events_{{job.parameters.execution_datetime_str}}`",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "dbt_initiate",
+      "description": "Install dbt dependencies and seed state_codes reference data",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "listen_events_delete_external_table"
+        },
+        {
+          "task_key": "page_view_events_delete_external_table"
+        },
+        {
+          "task_key": "auth_events_delete_external_table"
+        }
+      ],
+      "dbt_task": {
+        "commands": [
+          "dbt deps",
+          "dbt seed --select state_codes --profiles-dir . --target prod"
+        ],
+        "project_directory": "{{job.parameters.dbt_project_path}}",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    },
+    {
+      "task_key": "dbt_streamify_run",
+      "description": "Run dbt models to generate dims and facts for streamify",
+      "job_cluster_key": "streamify_cluster",
+      "depends_on": [
+        {
+          "task_key": "dbt_initiate"
+        }
+      ],
+      "dbt_task": {
+        "commands": [
+          "dbt deps",
+          "dbt run --profiles-dir . --target prod"
+        ],
+        "project_directory": "{{job.parameters.dbt_project_path}}",
+        "warehouse_id": "{{job.parameters.warehouse_id}}"
+      }
+    }
+  ]
+}

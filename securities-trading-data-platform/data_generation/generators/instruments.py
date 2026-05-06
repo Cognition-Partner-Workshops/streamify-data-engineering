@@ -121,22 +121,20 @@ _SECTOR_COMPANIES: dict[Sector, list[tuple[str, str]]] = {
 }
 
 
-def _generate_isin() -> str:
-    country = "US"
-    nsin = "".join(random.choices(string.ascii_uppercase + string.digits, k=9))
-    return f"{country}{nsin}0"
-
-
-def _generate_cusip() -> str:
-    return "".join(random.choices(string.ascii_uppercase + string.digits, k=9))
-
-
 class InstrumentGenerator:
     """Generates a universe of financial instruments across asset classes."""
 
     def __init__(self, num_instruments: int = 500, seed: int = 42):
         self.num_instruments = num_instruments
         self.rng = random.Random(seed)
+
+    def _generate_isin(self) -> str:
+        country = "US"
+        nsin = "".join(self.rng.choices(string.ascii_uppercase + string.digits, k=9))
+        return f"{country}{nsin}0"
+
+    def _generate_cusip(self) -> str:
+        return "".join(self.rng.choices(string.ascii_uppercase + string.digits, k=9))
 
     def generate(self) -> pd.DataFrame:
         instruments = []
@@ -161,8 +159,8 @@ class InstrumentGenerator:
                     "exchange": self.rng.choice([Exchange.NYSE, Exchange.NASDAQ, Exchange.BATS, Exchange.IEX]).value,
                     "currency": Currency.USD.value,
                     "sector": sector.value,
-                    "isin": _generate_isin(),
-                    "cusip": _generate_cusip(),
+                    "isin": self._generate_isin(),
+                    "cusip": self._generate_cusip(),
                     "lot_size": 100,
                     "tick_size": 0.01,
                     "is_active": True,
@@ -204,8 +202,8 @@ class InstrumentGenerator:
                     "exchange": self.rng.choice([Exchange.ARCA, Exchange.BATS]).value,
                     "currency": Currency.USD.value,
                     "sector": None,
-                    "isin": _generate_isin(),
-                    "cusip": _generate_cusip(),
+                    "isin": self._generate_isin(),
+                    "cusip": self._generate_cusip(),
                     "lot_size": 100,
                     "tick_size": 0.01,
                     "is_active": True,
@@ -238,8 +236,8 @@ class InstrumentGenerator:
                     "exchange": Exchange.NYSE.value,
                     "currency": Currency.USD.value,
                     "sector": None,
-                    "isin": _generate_isin(),
-                    "cusip": _generate_cusip(),
+                    "isin": self._generate_isin(),
+                    "cusip": self._generate_cusip(),
                     "lot_size": 1000,
                     "tick_size": 0.001,
                     "is_active": True,

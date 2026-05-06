@@ -32,18 +32,18 @@ df_daily_summary = (
     df_market
     .groupBy("symbol", "trade_date")
     .agg(
-        F.first("open").alias("daily_open"),
+        F.min_by("open", "timestamp").alias("daily_open"),
         F.round(F.max("high"), 4).alias("daily_high"),
         F.round(F.min("low"), 4).alias("daily_low"),
-        F.last("close").alias("daily_close"),
+        F.max_by("close", "timestamp").alias("daily_close"),
         F.sum("volume").alias("daily_volume"),
         F.round(F.avg("vwap"), 4).alias("daily_vwap"),
         F.sum("num_trades").alias("daily_num_trades"),
         F.round(F.avg("spread_bps"), 2).alias("avg_spread_bps"),
         F.round(F.avg("relative_volume"), 2).alias("avg_relative_volume"),
         F.round(F.avg("volatility_20"), 4).alias("avg_volatility"),
-        F.last("sma_5").alias("sma_5"),
-        F.last("sma_20").alias("sma_20"),
+        F.max_by("sma_5", "timestamp").alias("sma_5"),
+        F.max_by("sma_20", "timestamp").alias("sma_20"),
     )
 )
 

@@ -108,19 +108,9 @@ resource "aws_s3_bucket_lifecycle_configuration" "data_lake" {
     }
   }
 
-  # Checkpoints: expire after 30 days
-  rule {
-    id     = "checkpoints-lifecycle"
-    status = "Enabled"
-
-    filter {
-      prefix = "_checkpoints/"
-    }
-
-    expiration {
-      days = 30
-    }
-  }
+  # Checkpoints: DO NOT expire — required for Auto Loader incremental state.
+  # Deleting checkpoint files causes streaming queries to lose track of
+  # already-processed files, resulting in duplicate ingestion.
 }
 
 # ─── Folder Structure (empty objects as prefixes) ─────────────────────────────

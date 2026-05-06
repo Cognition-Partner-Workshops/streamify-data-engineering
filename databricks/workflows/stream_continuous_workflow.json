@@ -1,0 +1,52 @@
+{
+  "name": "streamify_continuous_streaming",
+  "description": "Long-running continuous streaming job that reads from Kafka and writes to Delta Lake bronze tables. Replaces the spark-submit job on the GCP Spark cluster. This is a separate workflow from the hourly batch pipeline.",
+  "tags": {
+    "project": "streamify",
+    "type": "streaming",
+    "migrated_from": "spark-submit"
+  },
+  "schedule": null,
+  "max_concurrent_runs": 1,
+  "tasks": [
+    {
+      "task_key": "stream_all_events",
+      "description": "Continuous Kafka-to-Delta streaming for all three event topics (listen_events, page_view_events, auth_events).",
+      "notebook_task": {
+        "notebook_path": "/Repos/streamify-data-engineering/databricks/notebooks/stream_all_events",
+        "base_parameters": {
+          "kafka_bootstrap_servers": "{{kafka_bootstrap_servers}}",
+          "catalog": "streamify_catalog",
+          "bronze_schema": "bronze",
+          "checkpoint_base": "/Volumes/streamify_catalog/bronze/_checkpoints/kafka"
+        },
+        "source": "GIT"
+      },
+      "job_cluster_key": "streaming_cluster"
+    }
+  ],
+  "job_clusters": [
+    {
+      "job_cluster_key": "streaming_cluster",
+      "new_cluster": {
+        "spark_version": "14.3.x-scala2.12",
+        "node_type_id": "Standard_DS3_v2",
+        "num_workers": 2,
+        "spark_conf": {
+          "spark.databricks.delta.preview.enabled": "true",
+          "spark.databricks.sql.initial.catalog.name": "streamify_catalog"
+        },
+        "data_security_mode": "SINGLE_USER",
+        "runtime_engine": "PHOTON"
+      }
+    }
+  ],
+  "continuous": {
+    "pause_status": "PAUSED"
+  },
+  "email_notifications": {
+    "on_failure": [],
+    "no_alert_for_skipped_runs": true
+  },
+  "format": "MULTI_TASK"
+}

@@ -1,0 +1,23 @@
+streamify:
+  outputs:
+    dev:
+      type: databricks
+      catalog: streamify_catalog
+      schema: streamify_dev
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      threads: 4
+      connect_retries: 3
+      connect_timeout: 60
+    prod:
+      type: databricks
+      catalog: streamify_catalog
+      schema: streamify_prod
+      host: "{{ env_var('DATABRICKS_HOST') }}"
+      http_path: "{{ env_var('DATABRICKS_HTTP_PATH') }}"
+      token: "{{ env_var('DATABRICKS_TOKEN') }}"
+      threads: 4
+      connect_retries: 3
+      connect_timeout: 60
+  target: dev

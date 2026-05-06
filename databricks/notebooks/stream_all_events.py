@@ -188,8 +188,8 @@ for topic in TOPICS:
     target_table = f"{CATALOG}.{BRONZE_SCHEMA}.{topic}"
     checkpoint = f"{CHECKPOINT_BASE}/{topic}"
 
-    writer = create_delta_write_stream(processed, target_table, checkpoint)
-    writers.append(writer.start())
+    query = create_delta_write_stream(processed, target_table, checkpoint)
+    writers.append(query)
 
 # COMMAND ----------
 

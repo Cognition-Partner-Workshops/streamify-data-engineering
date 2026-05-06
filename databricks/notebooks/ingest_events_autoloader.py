@@ -190,7 +190,7 @@ for topic in TOPICS:
         target_table=target_table,
         checkpoint_path=checkpoint,
     )
-    query.start().awaitTermination()
+    query.awaitTermination()
     print(f"  {topic} ingestion complete.")
 
 # COMMAND ----------

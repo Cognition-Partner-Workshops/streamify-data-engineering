@@ -163,7 +163,8 @@ def create_delta_write_stream(
 
     Returns
     -------
-    DataStreamWriter (call `.start()` to begin)
+    StreamingQuery
+        The started streaming query (already running).
     """
     return (
         stream.writeStream
@@ -212,7 +213,8 @@ def create_autoloader_stream(
 
     Returns
     -------
-    DataStreamWriter (call `.start()` to begin)
+    StreamingQuery
+        The started streaming query (already running).
     """
     return (
         spark.readStream

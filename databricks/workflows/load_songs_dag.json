@@ -6,9 +6,6 @@
     "domain": "streamify"
   },
   "max_concurrent_runs": 1,
-  "schedule": {
-    "pause_status": "UNPAUSED"
-  },
   "parameters": [
     {
       "name": "catalog",
@@ -21,6 +18,10 @@
     {
       "name": "volume_path",
       "default": "/Volumes/streamify/streamify_stg/songs_raw"
+    },
+    {
+      "name": "warehouse_id",
+      "default": ""
     }
   ],
   "job_clusters": [
@@ -71,7 +72,7 @@
           "path": "/Workspace/Shared/streamify/sql/create_songs_table.sql",
           "source": "WORKSPACE"
         },
-        "warehouse_id": "",
+        "warehouse_id": "{{job.parameters.warehouse_id}}",
         "parameters": {
           "catalog": "{{job.parameters.catalog}}",
           "schema": "{{job.parameters.schema}}",
